@@ -59,3 +59,12 @@ The study focuses on the Mt. Kenya region, a critical montane ecosystem characte
 ---
 
 ## Repository Structure
+- `gee/` – Google Earth Engine scripts
+- `qgis/` 
+- `python/` – Python scripts for modeling and analysis
+- `data/` – Sample processed datasets
+- `outputs/` – Maps, figures, and tables
+- `docs/` – Methodology and documentation
+
+## Status
+Work in progress.
