@@ -1,0 +1,567 @@
+function maskL457sr(image) {
+  // Bit 0 - Fill
+  // Bit 1 - Dilated Cloud
+  // Bit 2 - Unused
+  // Bit 3 - Cloud
+  // Bit 4 - Cloud Shadow
+  var qaMask = image.select('QA_PIXEL').bitwiseAnd(parseInt('11111', 2)).eq(0);
+  var saturationMask = image.select('QA_RADSAT').eq(0);
+
+  // Apply the scaling factors to the appropriate bands.
+  var opticalBands = image.select('SR_B.').multiply(0.0000275).add(-0.2);
+  var thermalBand = image.select('ST_B6').multiply(0.00341802).add(149.0);
+
+  // Replace the original bands with the scaled ones and apply the masks.
+  return image.addBands(opticalBands, null, true)
+      .addBands(thermalBand, null, true)
+      .updateMask(qaMask)
+      .updateMask(saturationMask);
+}
+
+Map.addLayer(ROI, {min:0, max:3000}, 'ROI');
+
+var RGB = {
+  bands: ['SR_B4', 'SR_B3', 'SR_B2'],
+  min: 0.0,
+  max: 0.3,
+};
+
+//Landsat 8 Mask
+function maskL8sr(image) {
+  // Bit 0 - Fill
+  // Bit 1 - Dilated Cloud
+  // Bit 2 - Cirrus
+  // Bit 3 - Cloud
+  // Bit 4 - Cloud Shadow
+  var qaMask = image.select('QA_PIXEL').bitwiseAnd(parseInt('11111', 2)).eq(0);
+  var saturationMask = image.select('QA_RADSAT').eq(0);
+
+  // Apply the scaling factors to the appropriate bands.
+  var opticalBands = image.select('SR_B.').multiply(0.0000275).add(-0.2);
+  var thermalBands = image.select('ST_B.*').multiply(0.00341802).add(149.0);
+
+  // Replace the original bands with the scaled ones and apply the masks.
+  return image.addBands(opticalBands, null, true)
+      .addBands(thermalBands, null, true)
+      .updateMask(qaMask)
+      .updateMask(saturationMask);
+}
+
+
+// Function to calculate NBR for Landsat 7
+function calculateNBR(image){
+  return image.normalizedDifference(['SR_B4', 'SR_B7']).rename('NBR');
+}
+
+
+var RGB = {
+  bands: ['SR_B4', 'SR_B3', 'SR_B2'],
+  min: 0.0,
+  max: 0.3,
+};
+
+//Pre-fire image
+var preFireImage = ee.ImageCollection('LANDSAT/LE07/C02/T1_L2')
+                  .filterDate('2011-01-01', '2011-12-31')
+                  .map(maskL457sr);
+
+var preFireImage = preFireImage.median().clip(ROI);
+
+
+Map.addLayer(preFireImage , RGB, 'preFireImage ');
+
+
+
+// Load Landsat 7 collection for a post-fire image 2012
+var postFireImage = ee.ImageCollection('LANDSAT/LE07/C02/T1_L2')
+                  .filterDate('2012-03-13', '2012-12-31')
+                  .map(maskL457sr);
+
+var postFireImage2012 = postFireImage.median().clip(ROI);
+
+
+Map.addLayer(postFireImage2012 , RGB, 'postFireImage2012 ');
+
+// Function to calculate dNBR
+function calculateDNBR(preFireImage, postFireImage2012) {
+  var preNBR = calculateNBR(preFireImage);
+  var postNBR = calculateNBR(postFireImage2012);
+  return preNBR.subtract(postNBR).rename('dNBR2012');
+}
+
+// Function to classify dNBR into burn severity classes
+function classifyBurnSeverity(dNBR2012) {
+  return dNBR2012.gt(0.66).multiply(5)  // High Severity
+          .add(dNBR2012.gt(0.44).and(dNBR2012.lte(0.66)).multiply(4))  // Moderate-high Severity
+          .add(dNBR2012.gt(0.27).and(dNBR2012.lte(0.44)).multiply(3))  // Moderate Severity
+          .add(dNBR2012.gt(0.1).and(dNBR2012.lte(0.27)).multiply(2))   // Low Severity
+          .add(dNBR2012.gt(-0.1).and(dNBR2012.lte(0.1)).multiply(1))   // Unburned
+          .rename('BurnSeverity2012');
+}
+
+// Calculate dNBR
+var dNBR2012 = calculateDNBR(preFireImage, postFireImage2012);
+
+// Classify burn severity
+var BurnSeverity2012 = classifyBurnSeverity(dNBR2012);
+
+// Define visualization parameters
+var visParams = {
+  min: 1,
+  max: 5,
+  palette: ['blue', 'green', 'yellow', 'orange', 'red']
+};
+
+// Add layer to the map
+Map.addLayer(BurnSeverity2012, visParams, 'Burn Severity 2012');
+
+
+
+// Function to calculate NBR Landsat 8
+function calculateNBR8(image) {
+  return image.normalizedDifference(['NIR', 'SWIR2']).rename('NBR');
+}
+// Load Landsat 7 collection for a post-fire image 2013
+var postFireImage2013 = ee.ImageCollection('LANDSAT/LE07/C02/T1_L2')
+                  .filterDate('2013-03-13', '2013-12-31')
+                  .map(maskL457sr);
+
+var postFireImage2013 = postFireImage2013.median().clip(ROI);
+
+
+Map.addLayer(postFireImage2013 , RGB, 'postFireImage2013 ');
+
+// Function to calculate dNBR
+function calculateDNBR(preFireImage, postFireImage2013) {
+  var preNBR = calculateNBR(preFireImage);
+  var postNBR = calculateNBR(postFireImage2013);
+  return preNBR.subtract(postNBR).rename('dNBR2013');
+}
+
+// Function to classify dNBR into burn severity classes
+function classifyBurnSeverity(dNBR2013) {
+  return dNBR2013.gt(0.66).multiply(5)  // High Severity
+          .add(dNBR2013.gt(0.44).and(dNBR2013.lte(0.66)).multiply(4))  // Moderate-high Severity
+          .add(dNBR2013.gt(0.27).and(dNBR2013.lte(0.44)).multiply(3))  // Moderate Severity
+          .add(dNBR2013.gt(0.1).and(dNBR2013.lte(0.27)).multiply(2))   // Low Severity
+          .add(dNBR2013.gt(-0.1).and(dNBR2013.lte(0.1)).multiply(1))   // Unburned
+          .rename('BurnSeverity 2013');
+}
+
+// Load Landsat 7 collection for a post-fire image 2014
+var postFireImage2014 = ee.ImageCollection('LANDSAT/LE07/C02/T1_L2')
+                  .filterDate('2014-03-13', '2014-12-31')
+                  .map(maskL457sr);
+
+var postFireImage2014 = postFireImage2014.median().clip(ROI);
+
+
+Map.addLayer(postFireImage2014 , RGB, 'postFireImage2014 ');
+
+// Function to calculate dNBR for 2014
+function calculateDNBR(preFireImage, postFireImage2014) {
+  var preNBR = calculateNBR(preFireImage);
+  var postNBR = calculateNBR(postFireImage2014);
+  return preNBR.subtract(postNBR).rename('dNBR2014');
+}
+
+// Function to classify dNBR into burn severity classes for 2014
+function classifyBurnSeverity(dNBR2014) {
+  return dNBR2014.gt(0.66).multiply(5)  // High Severity
+          .add(dNBR2014.gt(0.44).and(dNBR2014.lte(0.66)).multiply(4))  // Moderate-high Severity
+          .add(dNBR2014.gt(0.27).and(dNBR2014.lte(0.44)).multiply(3))  // Moderate Severity
+          .add(dNBR2014.gt(0.1).and(dNBR2014.lte(0.27)).multiply(2))   // Low Severity
+          .add(dNBR2014.gt(-0.1).and(dNBR2014.lte(0.1)).multiply(1))   // Unburned
+          .rename('BurnSeverity 2014');
+}
+
+
+// Load Landsat 8 collection for a post-fire image 2015
+var postFireImage2015 = ee.ImageCollection('LANDSAT/LC08/C02/T1_L2')
+                  .filterDate('2015-03-13', '2015-12-31')
+                  .map(maskL8sr);
+
+var postFireImage2015 = postFireImage2015.median().clip(ROI);
+
+Map.addLayer(postFireImage2015 , RGB, 'postFireImage2015 ');
+
+// Function to calculate dNBR for 2015
+function calculateDNBR(preFireImage, postFireImage2015) {
+  var preNBR = calculateNBR8(preFireImage);
+  var postNBR = calculateNBR8(postFireImage2015);
+  return preNBR.subtract(postNBR).rename('dNBR2015');
+}
+
+// Function to classify dNBR into burn severity classes for 2015
+function classifyBurnSeverity(dNBR2015) {
+  return dNBR2015.gt(0.66).multiply(5)  // High Severity
+          .add(dNBR2015.gt(0.44).and(dNBR2015.lte(0.66)).multiply(4))  // Moderate-high Severity
+          .add(dNBR2015.gt(0.27).and(dNBR2015.lte(0.44)).multiply(3))  // Moderate Severity
+          .add(dNBR2015.gt(0.1).and(dNBR2015.lte(0.27)).multiply(2))   // Low Severity
+          .add(dNBR2015.gt(-0.1).and(dNBR2015.lte(0.1)).multiply(1))   // Unburned
+          .rename('BurnSeverity 2015');
+}
+
+
+// Load Landsat 8 collection for a post-fire image 2016
+var postFireImage2016 = ee.ImageCollection('LANDSAT/LC08/C02/T1_L2')
+                  .filterDate('2016-03-13', '2016-12-31')
+                  .map(maskL8sr);
+
+var postFireImage2016 = postFireImage2016.median().clip(ROI);
+
+Map.addLayer(postFireImage2016 , RGB, 'postFireImage2016 ');
+
+// Function to calculate dNBR for 2016
+function calculateDNBR(preFireImage, postFireImage2016) {
+  var preNBR = calculateNBR8(preFireImage);
+  var postNBR = calculateNBR8(postFireImage2016);
+  return preNBR.subtract(postNBR).rename('dNBR2016');
+}
+
+// Function to classify dNBR into burn severity classes for 2016
+function classifyBurnSeverity(dNBR2016) {
+  return dNBR2016.gt(0.66).multiply(5)  // High Severity
+          .add(dNBR2016.gt(0.44).and(dNBR2016.lte(0.66)).multiply(4))  // Moderate-high Severity
+          .add(dNBR2016.gt(0.27).and(dNBR2016.lte(0.44)).multiply(3))  // Moderate Severity
+          .add(dNBR2016.gt(0.1).and(dNBR2016.lte(0.27)).multiply(2))   // Low Severity
+          .add(dNBR2016.gt(-0.1).and(dNBR2016.lte(0.1)).multiply(1))   // Unburned
+          .rename('BurnSeverity 2016');
+}
+
+
+// Load Landsat 8 collection for a post-fire image 2017
+var postFireImage2017 = ee.ImageCollection('LANDSAT/LC08/C02/T1_L2')
+                  .filterDate('2017-03-13', '2017-12-31')
+                  .map(maskL8sr);
+
+var postFireImage2017 = postFireImage2017.median().clip(ROI);
+
+
+Map.addLayer(postFireImage2017 , RGB, 'postFireImage2017 ');
+
+// Function to calculate dNBR for 2017
+function calculateDNBR(preFireImage, postFireImage2017) {
+  var preNBR = calculateNBR8(preFireImage);
+  var postNBR = calculateNBR8(postFireImage2017);
+  return preNBR.subtract(postNBR).rename('dNBR2017');
+}
+
+// Function to classify dNBR into burn severity classes for 2017
+function classifyBurnSeverity(dNBR2017) {
+  return dNBR2017.gt(0.66).multiply(5)  // High Severity
+          .add(dNBR2017.gt(0.44).and(dNBR2017.lte(0.66)).multiply(4))  // Moderate-high Severity
+          .add(dNBR2017.gt(0.27).and(dNBR2017.lte(0.44)).multiply(3))  // Moderate Severity
+          .add(dNBR2017.gt(0.1).and(dNBR2017.lte(0.27)).multiply(2))   // Low Severity
+          .add(dNBR2017.gt(-0.1).and(dNBR2017.lte(0.1)).multiply(1))   // Unburned
+          .rename('BurnSeverity 2017');
+}
+
+
+// Load Landsat 8 collection for a post-fire image 2018
+var postFireImage2018 = ee.ImageCollection('LANDSAT/LC08/C02/T1_L2')
+                  .filterDate('2018-03-13', '2018-12-31')
+                  .map(maskL8sr);
+
+var postFireImage2018 = postFireImage2018.median().clip(ROI);
+
+Map.addLayer(postFireImage2018 , RGB, 'postFireImage2018 ');
+
+// Function to calculate dNBR for 2018
+function calculateDNBR(preFireImage, postFireImage2018) {
+  var preNBR = calculateNBR8(preFireImage);
+  var postNBR = calculateNBR8(postFireImage2018);
+  return preNBR.subtract(postNBR).rename('dNBR2018');
+}
+
+// Function to classify dNBR into burn severity classes for 2018
+function classifyBurnSeverity(dNBR2018) {
+  return dNBR2018.gt(0.66).multiply(5)  // High Severity
+          .add(dNBR2018.gt(0.44).and(dNBR2018.lte(0.66)).multiply(4))  // Moderate-high Severity
+          .add(dNBR2018.gt(0.27).and(dNBR2018.lte(0.44)).multiply(3))  // Moderate Severity
+          .add(dNBR2018.gt(0.1).and(dNBR2018.lte(0.27)).multiply(2))   // Low Severity
+          .add(dNBR2018.gt(-0.1).and(dNBR2018.lte(0.1)).multiply(1))   // Unburned
+          .rename('BurnSeverity 2018');
+}
+
+
+// Load Landsat 8 collection for a post-fire image 2019
+var postFireImage2019 = ee.ImageCollection('LANDSAT/LC08/C02/T1_L2')
+                  .filterDate('2019-03-13', '2019-12-31')
+                  .map(maskL8sr);
+
+var postFireImage2019 = postFireImage2019.median().clip(ROI);
+
+Map.addLayer(postFireImage2019 , RGB, 'postFireImage2019 ');
+
+// Function to calculate dNBR for 2019
+function calculateDNBR(preFireImage, postFireImage2019) {
+  var preNBR = calculateNBR8(preFireImage);
+  var postNBR = calculateNBR8(postFireImage2019);
+  return preNBR.subtract(postNBR).rename('dNBR2019');
+}
+
+// Function to classify dNBR into burn severity classes for 2019
+function classifyBurnSeverity(dNBR2019) {
+  return dNBR2019.gt(0.66).multiply(5)  // High Severity
+          .add(dNBR2019.gt(0.44).and(dNBR2019.lte(0.66)).multiply(4))  // Moderate-high Severity
+          .add(dNBR2019.gt(0.27).and(dNBR2019.lte(0.44)).multiply(3))  // Moderate Severity
+          .add(dNBR2019.gt(0.1).and(dNBR2019.lte(0.27)).multiply(2))   // Low Severity
+          .add(dNBR2019.gt(-0.1).and(dNBR2019.lte(0.1)).multiply(1))   // Unburned
+          .rename('BurnSeverity 2019');
+}
+
+
+// Load Landsat 8 collection for a post-fire image 2020
+var postFireImage2020 = ee.ImageCollection('LANDSAT/LC08/C02/T1_L2')
+                  .filterDate('2020-03-13', '2020-12-31')
+                  .map(maskL8sr);
+
+var postFireImage2020 = postFireImage2020.median().clip(ROI);
+
+Map.addLayer(postFireImage2020 , RGB, 'postFireImage2020 ');
+
+// Function to calculate dNBR for 2020
+function calculateDNBR(preFireImage, postFireImage2020) {
+  var preNBR = calculateNBR8(preFireImage);
+  var postNBR = calculateNBR8(postFireImage2020);
+  return preNBR.subtract(postNBR).rename('dNBR2020');
+}
+
+// Function to classify dNBR into burn severity classes for 2020
+function classifyBurnSeverity(dNBR2020) {
+  return dNBR2020.gt(0.66).multiply(5)  // High Severity
+          .add(dNBR2020.gt(0.44).and(dNBR2020.lte(0.66)).multiply(4))  // Moderate-high Severity
+          .add(dNBR2020.gt(0.27).and(dNBR2020.lte(0.44)).multiply(3))  // Moderate Severity
+          .add(dNBR2020.gt(0.1).and(dNBR2020.lte(0.27)).multiply(2))   // Low Severity
+          .add(dNBR2020.gt(-0.1).and(dNBR2020.lte(0.1)).multiply(1))   // Unburned
+          .rename('BurnSeverity 2020');
+}
+
+
+// Load Landsat 8 collection for a post-fire image 2021
+var postFireImage2021 = ee.ImageCollection('LANDSAT/LC08/C02/T1_L2')
+                  .filterDate('2021-03-13', '2021-12-31')
+                  .map(maskL8sr);
+
+var postFireImage2021 = postFireImage2021.median().clip(ROI);
+
+Map.addLayer(postFireImage2021 , RGB, 'postFireImage2021 ');
+
+// Function to calculate dNBR for 2021
+function calculateDNBR(preFireImage, postFireImage2021) {
+  var preNBR = calculateNBR8(preFireImage);
+  var postNBR = calculateNBR8(postFireImage2021);
+  return preNBR.subtract(postNBR).rename('dNBR2021');
+}
+
+// Function to classify dNBR into burn severity classes for 2021
+function classifyBurnSeverity(dNBR2021) {
+  return dNBR2021.gt(0.66).multiply(5)  // High Severity
+          .add(dNBR2021.gt(0.44).and(dNBR2021.lte(0.66)).multiply(4))  // Moderate-high Severity
+          .add(dNBR2021.gt(0.27).and(dNBR2021.lte(0.44)).multiply(3))  // Moderate Severity
+          .add(dNBR2021.gt(0.1).and(dNBR2021.lte(0.27)).multiply(2))   // Low Severity
+          .add(dNBR2021.gt(-0.1).and(dNBR2021.lte(0.1)).multiply(1))   // Unburned
+          .rename('BurnSeverity 2021');
+}
+
+
+// Load Landsat 8 collection for a post-fire image 2022
+var postFireImage2022 = ee.ImageCollection('LANDSAT/LC08/C02/T1_L2')
+                  .filterDate('2022-03-13', '2022-12-31')
+                  .map(maskL8sr);
+
+var postFireImage2022 = postFireImage2022.median().clip(ROI);
+
+Map.addLayer(postFireImage2022 , RGB, 'postFireImage2022 ');
+
+// Function to calculate dNBR for 2022
+function calculateDNBR(preFireImage, postFireImage2022) {
+  var preNBR = calculateNBR8(preFireImage);
+  var postNBR = calculateNBR8(postFireImage2022);
+  return preNBR.subtract(postNBR).rename('dNBR2022');
+}
+
+// Function to classify dNBR into burn severity classes for 2022
+function classifyBurnSeverity(dNBR2022) {
+  return dNBR2022.gt(0.66).multiply(5)  // High Severity
+          .add(dNBR2022.gt(0.44).and(dNBR2022.lte(0.66)).multiply(4))  // Moderate-high Severity
+          .add(dNBR2022.gt(0.27).and(dNBR2022.lte(0.44)).multiply(3))  // Moderate Severity
+          .add(dNBR2022.gt(0.1).and(dNBR2022.lte(0.27)).multiply(2))   // Low Severity
+          .add(dNBR2022.gt(-0.1).and(dNBR2022.lte(0.1)).multiply(1))   // Unburned
+          .rename('BurnSeverity 2022');
+}
+
+
+// Load Landsat 8 collection for a post-fire image 2023
+var postFireImage2023 = ee.ImageCollection('LANDSAT/LC08/C02/T1_L2')
+                  .filterDate('2023-03-13', '2023-12-31')
+                  .map(maskL8sr);
+
+var postFireImage2023 = postFireImage2023.median().clip(ROI);
+
+
+Map.addLayer(postFireImage2023 , RGB, 'postFireImage2023 ');
+
+// Function to calculate dNBR for 2023
+function calculateDNBR(preFireImage, postFireImage2023) {
+  var preNBR = calculateNBR8(preFireImage);
+  var postNBR = calculateNBR8(postFireImage2023);
+  return preNBR.subtract(postNBR).rename('dNBR2023');
+}
+
+// Function to classify dNBR into burn severity classes for 2023
+function classifyBurnSeverity(dNBR2023) {
+  return dNBR2023.gt(0.66).multiply(5)  // High Severity
+          .add(dNBR2023.gt(0.44).and(dNBR2023.lte(0.66)).multiply(4))  // Moderate-high Severity
+          .add(dNBR2023.gt(0.27).and(dNBR2023.lte(0.44)).multiply(3))  // Moderate Severity
+          .add(dNBR2023.gt(0.1).and(dNBR2023.lte(0.27)).multiply(2))   // Low Severity
+          .add(dNBR2023.gt(-0.1).and(dNBR2023.lte(0.1)).multiply(1))   // Unburned
+          .rename('BurnSeverity 2023');
+}
+
+// Export annual composite
+    Export.image.toDrive({
+      image: postFireImage2012,
+      description: 'PostFireImage2012',
+      folder: 'GEE_Exports',
+      fileFormat:'GeoTIFF',
+      region: ROI,
+      scale: 30,
+      maxPixels: 1e13
+    });
+    
+// Export annual composite
+    Export.image.toDrive({
+      image: postFireImage2013,
+      description: 'PostFireImage2013',
+      folder: 'GEE_Exports',
+      fileFormat:'GeoTIFF',
+      region: ROI,
+      scale: 30,
+      maxPixels: 1e13
+    });
+    
+// Export annual composite
+    Export.image.toDrive({
+      image: postFireImage2014,
+      description: 'PostFireImage2014',
+      folder: 'GEE_Exports',
+      fileFormat:'GeoTIFF',
+      region: ROI,
+      scale: 30,
+      maxPixels: 1e13
+    });
+    
+// Export annual composite
+    Export.image.toDrive({
+      image: postFireImage2015,
+      description: 'PostFireImage2015',
+      folder: 'GEE_Exports',
+      fileFormat:'GeoTIFF',
+      region: ROI,
+      scale: 30,
+      maxPixels: 1e13
+    });
+// Export annual composite
+    Export.image.toDrive({
+      image: postFireImage2016,
+      description: 'PostFireImage2016',
+      folder: 'GEE_Exports',
+      fileFormat:'GeoTIFF',
+      region: ROI,
+      scale: 30,
+      maxPixels: 1e13
+    });
+// Export annual composite
+    Export.image.toDrive({
+      image: postFireImage2017,
+      description: 'PostFireImage2017',
+      folder: 'GEE_Exports',
+      fileFormat:'GeoTIFF',
+      region: ROI,
+      scale: 30,
+      maxPixels: 1e13
+    });
+// Export annual composite
+    Export.image.toDrive({
+      image: postFireImage2018,
+      description: 'PostFireImage2018',
+      folder: 'GEE_Exports',
+      fileFormat:'GeoTIFF',
+      region: ROI,
+      scale: 30,
+      maxPixels: 1e13
+    });
+// Export annual composite
+    Export.image.toDrive({
+      image: postFireImage2019,
+      description: 'PostFireImage2019',
+      folder: 'GEE_Exports',
+      fileFormat:'GeoTIFF',
+      region: ROI,
+      scale: 30,
+      maxPixels: 1e13
+    });
+// Export annual composite
+    Export.image.toDrive({
+      image: postFireImage2019,
+      description: 'PostFireImage2019',
+      folder: 'GEE_Exports',
+      fileFormat:'GeoTIFF',
+      region: ROI,
+      scale: 30,
+      maxPixels: 1e13
+    });
+// Export annual composite
+    Export.image.toDrive({
+      image: postFireImage2020,
+      description: 'PostFireImage2020',
+      folder: 'GEE_Exports',
+      fileFormat:'GeoTIFF',
+      region: ROI,
+      scale: 30,
+      maxPixels: 1e13
+    });
+// Export annual composite
+    Export.image.toDrive({
+      image: postFireImage2021,
+      description: 'PostFireImage2021',
+      folder: 'GEE_Exports',
+      fileFormat:'GeoTIFF',
+      region: ROI,
+      scale: 30,
+      maxPixels: 1e13
+    });
+    
+// Export annual composite
+    Export.image.toDrive({
+      image: postFireImage2022,
+      description: 'PostFireImage2022',
+      folder: 'GEE_Exports',
+      fileFormat:'GeoTIFF',
+      region: ROI,
+      scale: 30,
+      maxPixels: 1e13
+    });
+// Export annual composite
+    Export.image.toDrive({
+      image: postFireImage2023,
+      description: 'PostFireImage2023',
+      folder: 'GEE_Exports',
+      fileFormat:'GeoTIFF',
+      region: ROI,
+      scale: 30,
+      maxPixels: 1e13
+    });
+    
+  // Export annual composite
+    Export.image.toDrive({
+      image: preFireImage,
+      description: 'PreFireImage',
+      folder: 'GEE_Exports',
+      region: ROI,
+      scale: 30,
+      fileFormat:'GeoTIFF',
+      maxPixels: 1e13
+    });

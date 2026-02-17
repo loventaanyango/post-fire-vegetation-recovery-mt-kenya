@@ -1,0 +1,76 @@
+
+
+// Define a function to calculate LST for a given year
+function extractLST(year) {
+  var startDate = ee.Date.fromYMD(year, 1, 1);  // Start of the year
+  var endDate = ee.Date.fromYMD(year, 12, 31);  // End of the year
+
+  // Select Landsat Collection depending on the year
+  var landsat;
+  if (year <= 2012) {
+    // Use Landsat 7 Surface Reflectance for years 2011-2012
+    landsat = ee.ImageCollection("LANDSAT/LE07/C02/T1_L2")
+              .filterBounds(geometry)
+              .filterDate(startDate, endDate)
+              .map(maskL7); // Cloud mask for Landsat 7
+  } else {
+    // Use Landsat 8 Surface Reflectance for years 2013 onwards
+    landsat = ee.ImageCollection("LANDSAT/LC08/C02/T1_L2")
+              .filterBounds(geometry)
+              .filterDate(startDate, endDate)
+              .map(maskL8); // Cloud mask for Landsat 8
+  }
+
+  // Select thermal bands: ST_B6 for Landsat 7 and ST_B10 for Landsat 8
+  var thermalBand = (year <= 2012) ? 'ST_B6' : 'ST_B10';
+  var landsatLST = landsat.select(thermalBand).mean(); // Mean LST for the year
+
+  // Export LST for the specific year to Google Drive
+  Export.image.toDrive({
+    image: landsatLST.clip(geometry),
+    description: 'LST_' + year,
+    folder: 'LST_Exports',  // Optional: Specify a folder in Google Drive
+    scale: 30,
+    region: geometry,
+    fileFormat: 'GeoTIFF'
+  });
+}
+
+// Cloud masking function for Landsat 8
+function maskL8(image) {
+  // Bit 0 - Fill, Bit 1 - Dilated Cloud, Bit 2 - Cirrus, Bit 3 - Cloud, Bit 4 - Cloud Shadow
+  var qaMask = image.select('QA_PIXEL').bitwiseAnd(parseInt('11111', 2)).eq(0);
+  var saturationMask = image.select('QA_RADSAT').eq(0);
+
+  // Apply the scaling factors to the appropriate bands.
+  var opticalBands = image.select('SR_B.').multiply(0.0000275).add(-0.2);
+  var thermalBands = image.select('ST_B.*').multiply(0.00341802).add(149.0);
+
+  // Replace the original bands with the scaled ones and apply the masks.
+  return image.addBands(opticalBands, null, true)
+              .addBands(thermalBands, null, true)
+              .updateMask(qaMask)
+              .updateMask(saturationMask);
+}
+
+// Cloud masking function for Landsat 7
+function maskL7(image) {
+  // Bit 0 - Fill, Bit 1 - Dilated Cloud, Bit 2 - Unused, Bit 3 - Cloud, Bit 4 - Cloud Shadow
+  var qaMask = image.select('QA_PIXEL').bitwiseAnd(parseInt('11111', 2)).eq(0);
+  var saturationMask = image.select('QA_RADSAT').eq(0);
+
+  // Apply the scaling factors to the appropriate bands.
+  var opticalBands = image.select('SR_B.').multiply(0.0000275).add(-0.2);
+  var thermalBand = image.select('ST_B6').multiply(0.00341802).add(149.0);  // Scale to Kelvin
+
+  // Replace the original bands with the scaled ones and apply the masks.
+  return image.addBands(opticalBands, null, true)
+              .addBands(thermalBand, null, true)
+              .updateMask(qaMask)
+              .updateMask(saturationMask);
+}
+
+// Loop over the years from 2011 to 2023 and call the extractLST function for each year
+for (var year = 2011; year <= 2023; year++) {
+  extractLST(year);
+}
