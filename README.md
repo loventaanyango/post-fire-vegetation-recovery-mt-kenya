@@ -4,8 +4,7 @@ BSc Geomatic Engineering & Geospatial Information Systems (GEGIS) final year pro
 
 > Can Land Surface Temperature (LST) — a variable largely overlooked in post-fire recovery models — help explain why some burned slopes of Mount Kenya recover and others don't?
 
-**[View the interactive story map →](https://loventaanyango.github.io/post-fire-vegetation-recovery-mt-kenya/)** *(live once GitHub Pages is enabled — see below)*
-
+**[View the interactive story map →](https://loventaanyango.github.io/post-fire-vegetation-recovery-mt-kenya/)** 
 ---
 
 ## Overview
@@ -80,7 +79,7 @@ cd post-fire-vegetation-recovery-mt-kenya
 pip install -r requirements.txt
 
 # Run the model
-python python/random_forest_model.py   # update to your actual script name(s)
+python python/Final_RF.py   # update to your actual script name(s)
 ```
 
 The Earth Engine scripts in `gee/` are written for the [GEE Code Editor](https://code.earthengine.google.com/) — open them there directly, or adapt with the `earthengine-api` Python package for local execution. The QGIS project in `qgis/polygon_vector/` can be opened directly in QGIS ≥ 3.x.
@@ -103,7 +102,7 @@ If referencing this work, please cite:
 
 ## License
 
-*No license currently specified.* Consider adding one — [MIT](https://choosealicense.com/licenses/mit/) or [Apache 2.0](https://choosealicense.com/licenses/apache-2.0/) for code, and [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) for the report and figures — so others know how they may reuse your work. GitHub can generate a `LICENSE` file for you when you add one via the repo's **Add file** menu.
+The code in this repository (`python/`, `gee/`, `qgis/`) is licensed under the **MIT License** — see [`LICENSE`](./LICENSE) for the full text. In short: anyone may use, copy, modify, and redistribute it, provided the original copyright notice is retained.
 
 ## Acknowledgements
 
