@@ -1,17 +1,17 @@
 # Evaluating the Role of Land Surface Temperature in Post-Fire Vegetation Recovery: A Case Study of Mount Kenya
 
-BSc Geomatic Engineering & Geospatial Information Systems (GEGIS) final year project — Jomo Kenyatta University of Agriculture and Technology, 2025.
+BSc Geomatic Engineering & Geospatial Information Systems (GEGIS) final year project at Jomo Kenyatta University of Agriculture and Technology, 2025.
 
-> Can Land Surface Temperature (LST) — a variable largely overlooked in post-fire recovery models — help explain why some burned slopes of Mount Kenya recover and others don't?
+> Can Land Surface Temperature (LST), a variable largely overlooked in post-fire recovery models, help explain why some burned slopes of Mount Kenya recover and others don't?
 
 **[View the interactive story map →](https://loventaanyango.github.io/post-fire-vegetation-recovery-mt-kenya/)** 
 ---
 
 ## Overview
 
-This project investigates post-fire vegetation recovery (PVR) on Mount Kenya using a decade of Landsat imagery (2011–2021), integrating Land Surface Temperature with burn severity, topography, climate, and soil organic carbon into a Random Forest regression model. The model predicts the Normalized Burn Ratio (NBR) — a proxy for vegetation recovery — following the March 2012 fire that burned over 8,000 hectares of forest.
+This project investigates post-fire vegetation recovery (PVR) on Mount Kenya using a decade of Landsat imagery (2011–2021), integrating Land Surface Temperature with burn severity, topography, climate, and soil organic carbon into a Random Forest regression model. The model predicts the Normalized Burn Ratio (NBR) following the March 2012 fire that burned over 8,000 hectares of forest.
 
-The study classifies burn severity into seven classes using the Differenced Normalized Burn Ratio (dNBR), validates results against Kenya Forest Service field data and the MODIS MCD64A1 burned-area product, and identifies LST's non-linear relationship with recovery — with a narrow thermal "sweet spot" around 299–300 K favouring regrowth.
+The study classifies burn severity into seven classes using the Differenced Normalized Burn Ratio (dNBR), validates results against Kenya Forest Service field data and the MODIS MCD64A1 burned-area product, and identifies LST's non-linear relationship with recovery with a narrow thermal "sweet spot" around 299–300 K favouring regrowth.
 
 ## Key Results
 
