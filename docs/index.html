@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reading the Mountain's Scars — Mt. Kenya Post-Fire Recovery</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#121613;
+    --bg-2:#181f1a;
+    --panel:#1b2420;
+    --panel-2:#20291f;
+    --ink:#EEEAE0;
+    --ink-dim:#9CA69B;
+    --ink-dimmer:#6C766A;
+    --ember:#E2602F;
+    --ember-dim:#8a3c22;
+    --amber:#C9A227;
+    --green:#5FA777;
+    --green-bright:#84C79A;
+    --ice:#7FA8C9;
+    --rule: rgba(238,234,224,0.12);
+    --rule-strong: rgba(238,234,224,0.22);
+    --maxw: 1180px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
+  }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-size:16px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background:var(--ember); color:#121613;}
+  h1,h2,h3{ font-family:'Fraunces', serif; font-weight:700; margin:0; letter-spacing:-0.01em;}
+  .mono{ font-family:'IBM Plex Mono', monospace; }
+  .wrap{ max-width:var(--maxw); margin:0 auto; padding:0 32px; }
+  a{ color:var(--green-bright); }
+
+  /* progress bar */
+  #progress{
+    position:fixed; top:0; left:0; height:3px; width:0%;
+    background:linear-gradient(90deg, var(--ember), var(--amber), var(--green));
+    z-index:200; transition:width 0.1s linear;
+  }
+
+  /* nav */
+  nav{
+    position:fixed; top:0; left:0; right:0; z-index:100;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 32px;
+    background:linear-gradient(180deg, rgba(18,22,19,0.92), rgba(18,22,19,0));
+    backdrop-filter:blur(2px);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+  }
+  nav .brand{ color:var(--ink); font-weight:600; }
+  nav .brand span{ color:var(--ember); }
+  nav ul{ display:flex; gap:22px; list-style:none; margin:0; padding:0; }
+  nav a{ color:var(--ink-dim); text-decoration:none; transition:color .2s; }
+  nav a:hover{ color:var(--green-bright); }
+  @media (max-width: 880px){ nav ul{ display:none; } }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    min-height:100vh;
+    display:flex; flex-direction:column; justify-content:flex-end;
+    padding:120px 32px 90px;
+    overflow:hidden;
+    background:
+      radial-gradient(ellipse 900px 500px at 18% 15%, rgba(226,96,47,0.20), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 85% 0%, rgba(127,168,201,0.14), transparent 55%),
+      radial-gradient(ellipse 1000px 700px at 50% 120%, rgba(95,167,119,0.16), transparent 60%),
+      linear-gradient(180deg, #0f1311, #121613 60%, #141c17);
+  }
+  .hero::before{ /* topo lines */
+    content:""; position:absolute; inset:0; opacity:0.5; pointer-events:none;
+    background-image: repeating-radial-gradient(circle at 30% 20%, transparent 0, transparent 38px, rgba(238,234,224,0.035) 39px, rgba(238,234,224,0.035) 40px);
+  }
+  .ember-field{ position:absolute; inset:0; pointer-events:none; }
+  .ember-field span{
+    position:absolute; bottom:-10px; border-radius:50%;
+    background:radial-gradient(circle, var(--ember), transparent 70%);
+    opacity:0.75;
+    animation: rise linear infinite;
+  }
+  @keyframes rise{
+    0%{ transform:translateY(0) translateX(0); opacity:0; }
+    10%{ opacity:0.8; }
+    100%{ transform:translateY(-105vh) translateX(var(--drift,20px)); opacity:0; }
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:12.5px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--amber); margin-bottom:22px; display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{ content:""; width:26px; height:1px; background:var(--amber); display:inline-block;}
+  .hero h1{
+    font-size:clamp(42px, 7vw, 92px);
+    line-height:0.98;
+    max-width:15ch;
+    color:var(--ink);
+  }
+  .hero h1 em{ font-style:italic; color:var(--green-bright); font-weight:500; }
+  .hero .sub{
+    max-width:640px; margin-top:28px; font-size:19px; color:var(--ink-dim); font-weight:400;
+  }
+  .hero .byline{
+    margin-top:46px; display:flex; gap:28px; flex-wrap:wrap;
+    font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--ink-dimmer); text-transform:uppercase; letter-spacing:0.05em;
+  }
+  .hero .byline b{ color:var(--ink-dim); display:block; font-size:10.5px; letter-spacing:0.1em; margin-bottom:4px; }
+  .scrolldown{
+    position:absolute; right:32px; bottom:36px; display:flex; align-items:center; gap:10px;
+    color:var(--ink-dimmer); font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.1em; text-transform:uppercase;
+  }
+  .scrolldown .line{ width:1px; height:34px; background:linear-gradient(180deg, var(--ink-dimmer), transparent); animation:pulse 2s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{opacity:.3} 50%{opacity:1} }
+
+  /* ---------- SECTIONS ---------- */
+  section{ padding:110px 0; border-top:1px solid var(--rule); position:relative; }
+  section.tight{ padding:80px 0; }
+  .chapter{
+    display:flex; align-items:baseline; gap:16px; margin-bottom:14px;
+  }
+  .chapter .num{ font-family:'IBM Plex Mono',monospace; color:var(--ember); font-size:13px; letter-spacing:0.08em; }
+  .chapter .label{ font-family:'IBM Plex Mono',monospace; color:var(--ink-dimmer); font-size:12px; letter-spacing:0.14em; text-transform:uppercase; }
+  h2.title{ font-size:clamp(28px,4vw,44px); max-width:16ch; margin-bottom:22px; }
+  .lede{ font-size:19px; color:var(--ink-dim); max-width:64ch; margin-bottom:10px; }
+  p{ margin:0 0 16px; color:var(--ink-dim); max-width:66ch; }
+  .col2{ display:grid; grid-template-columns: 1fr 1fr; gap:56px; align-items:start; }
+  .col2.rev{ grid-template-columns: 1.1fr 1fr; }
+  @media (max-width:900px){ .col2, .col2.rev{ grid-template-columns:1fr; gap:34px; } }
+
+  .fade{ opacity:0; transform:translateY(24px); transition:opacity .7s ease, transform .7s ease; }
+  .fade.in{ opacity:1; transform:none; }
+
+  /* stat row */
+  .stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--rule); border:1px solid var(--rule); margin:40px 0 10px; }
+  .stat{ background:var(--bg); padding:26px 24px; }
+  .stat .num{ font-family:'Fraunces',serif; font-size:38px; font-weight:700; color:var(--ember); line-height:1; }
+  .stat .num.green{ color:var(--green-bright); }
+  .stat .num.ice{ color:var(--ice); }
+  .stat .lbl{ margin-top:10px; font-size:13px; color:var(--ink-dim); }
+  @media (max-width:700px){ .stats{ grid-template-columns:1fr; } }
+
+  /* map boxes */
+  .mapbox{
+    height:460px; border-radius:2px; border:1px solid var(--rule-strong);
+    overflow:hidden; position:relative; background:#0c0f0d;
+  }
+  .mapcaption{ margin-top:12px; font-size:12.5px; color:var(--ink-dimmer); font-family:'IBM Plex Mono',monospace; }
+  .legend-list{ list-style:none; margin:18px 0 0; padding:0; display:flex; flex-direction:column; gap:9px; }
+  .legend-list li{ display:flex; align-items:center; gap:10px; font-size:13.5px; color:var(--ink-dim); }
+  .swatch{ width:13px; height:13px; border-radius:3px; flex:none; }
+
+  /* fire timeline */
+  .timeline{ display:flex; flex-direction:column; margin-top:44px; border-left:1px solid var(--rule-strong); padding-left:0; }
+  .tl-item{ display:grid; grid-template-columns: 90px 22px 1fr; align-items:center; gap:0; padding:20px 0; border-bottom:1px dashed var(--rule); }
+  .tl-item:last-child{ border-bottom:none; }
+  .tl-year{ font-family:'IBM Plex Mono',monospace; font-size:15px; color:var(--ink); }
+  .tl-dot-col{ display:flex; justify-content:center; position:relative; }
+  .tl-dot{ border-radius:50%; background:var(--ember); box-shadow:0 0 0 4px rgba(18,22,19,1), 0 0 0 5px var(--rule-strong); }
+  .tl-body b{ color:var(--ink); font-weight:600; }
+  .tl-body span{ display:block; color:var(--ink-dim); font-size:14px; margin-top:3px; }
+  .tl-ha{ font-family:'IBM Plex Mono',monospace; color:var(--amber); font-size:13px; }
+
+  /* tables */
+  table{ width:100%; border-collapse:collapse; margin-top:18px; font-size:13.5px; }
+  th,td{ text-align:left; padding:10px 14px; border-bottom:1px solid var(--rule); }
+  th{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-dimmer); font-weight:500; }
+  td{ color:var(--ink-dim); }
+  td.hi{ color:var(--ink); font-family:'IBM Plex Mono',monospace; }
+  tr:hover td{ background:rgba(238,234,224,0.02); }
+
+  /* flow */
+  .flow{ display:flex; flex-wrap:wrap; gap:0; align-items:center; margin-top:36px; }
+  .flow-step{
+    background:var(--panel); border:1px solid var(--rule-strong); padding:16px 18px; border-radius:2px;
+    font-size:13px; color:var(--ink-dim); flex:1 1 150px; min-width:140px; text-align:center;
+  }
+  .flow-step b{ display:block; color:var(--ink); font-size:14px; margin-bottom:4px; font-family:'Fraunces',serif;}
+  .flow-arrow{ color:var(--ink-dimmer); padding:0 8px; font-size:18px; flex:none; }
+  @media (max-width:700px){ .flow-arrow{ transform:rotate(90deg); padding:8px 0; } .flow{flex-direction:column;} .flow-step{width:100%;}}
+
+  /* explorer */
+  .explorer{
+    background:var(--panel); border:1px solid var(--rule-strong); border-radius:3px; padding:28px; margin-top:38px;
+  }
+  .explorer-grid{ display:grid; grid-template-columns: 1.3fr 1fr; gap:30px; }
+  @media (max-width:900px){ .explorer-grid{ grid-template-columns:1fr; } }
+  .slider-row{ margin-top:18px; }
+  input[type=range]{
+    -webkit-appearance:none; width:100%; height:3px; background:var(--rule-strong); border-radius:2px; outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:16px; height:16px; border-radius:50%;
+    background:var(--ember); cursor:pointer; border:3px solid var(--bg); box-shadow:0 0 0 1px var(--ember);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:16px; height:16px; border-radius:50%; background:var(--ember); cursor:pointer; border:3px solid var(--bg);
+  }
+  .year-ticks{ display:flex; justify-content:space-between; margin-top:8px; font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--ink-dimmer); }
+  .readout{ margin-top:22px; padding:18px; background:var(--bg); border:1px solid var(--rule); border-radius:2px; }
+  .readout .yr{ font-family:'Fraunces',serif; font-size:30px; font-weight:700; }
+  .readout .val{ font-family:'IBM Plex Mono',monospace; font-size:13px; margin-top:6px; }
+  .readout .cap{ margin-top:10px; font-size:14px; color:var(--ink-dim); }
+  .badge{
+    display:inline-block; padding:3px 9px; border-radius:20px; font-family:'IBM Plex Mono',monospace; font-size:11px;
+    letter-spacing:0.04em; margin-top:10px;
+  }
+
+  /* chart card */
+  .chart-card{ background:var(--panel); border:1px solid var(--rule-strong); border-radius:3px; padding:26px; margin-top:30px; }
+  .chart-card h4{ font-family:'Fraunces',serif; font-weight:600; font-size:18px; margin-bottom:4px; }
+  .chart-card .note{ font-size:12.5px; color:var(--ink-dimmer); margin-bottom:14px; font-family:'IBM Plex Mono',monospace; }
+  canvas{ max-width:100%; }
+
+  .corr-strip{ display:flex; flex-direction:column; gap:8px; margin-top:20px; }
+  .corr-row{ display:grid; grid-template-columns: 110px 1fr 54px; align-items:center; gap:12px; font-size:13px; }
+  .corr-row .name{ color:var(--ink-dim); font-family:'IBM Plex Mono',monospace; font-size:12px; }
+  .corr-bar-bg{ height:8px; background:rgba(238,234,224,0.06); border-radius:6px; position:relative; overflow:hidden; }
+  .corr-bar{ position:absolute; top:0; bottom:0; border-radius:6px; }
+  .corr-val{ font-family:'IBM Plex Mono',monospace; font-size:12px; text-align:right; color:var(--ink); }
+
+  .cards3{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; margin-top:36px; }
+  @media (max-width:880px){ .cards3{ grid-template-columns:1fr; } }
+  .card{ background:var(--panel); border:1px solid var(--rule-strong); padding:24px; border-radius:2px; }
+  .card .tag{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--amber); letter-spacing:0.08em; text-transform:uppercase; }
+  .card h4{ font-family:'Fraunces',serif; font-size:19px; margin:10px 0 8px; }
+  .card p{ font-size:14px; margin:0; }
+
+  footer{ padding:70px 0 50px; border-top:1px solid var(--rule); }
+  footer .fgrid{ display:flex; justify-content:space-between; flex-wrap:wrap; gap:30px; }
+  footer .fcol{ font-size:13px; color:var(--ink-dim); max-width:340px; }
+  footer b{ color:var(--ink); display:block; margin-bottom:6px; font-family:'Fraunces',serif; font-size:15px;}
+  footer .mono{ color:var(--ink-dimmer); font-size:12px; }
+
+  .leaflet-container{ background:#0c0f0d !important; font-family:'Inter',sans-serif; }
+  .leaflet-control-attribution{ background:rgba(18,22,19,0.75) !important; color:var(--ink-dimmer) !important; font-size:9px !important; }
+  .leaflet-control-attribution a{ color:var(--ink-dim) !important; }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<nav>
+  <div class="brand">MT. KENYA <span>▲</span> POST-FIRE RECOVERY</div>
+  <ul>
+    <li><a href="#threat">Threat</a></li>
+    <li><a href="#area">Study Area</a></li>
+    <li><a href="#history">Fire History</a></li>
+    <li><a href="#method">Method</a></li>
+    <li><a href="#explorer">Burn Severity</a></li>
+    <li><a href="#model">Model</a></li>
+    <li><a href="#recovery">Recovery</a></li>
+    <li><a href="#conclusions">Conclusions</a></li>
+  </ul>
+</nav>
+
+<!-- ================= HERO ================= -->
+<header class="hero">
+  <div class="ember-field" id="emberField"></div>
+  <div class="wrap" style="position:relative; z-index:2;">
+    <div class="eyebrow">A Remote Sensing Study of Mount Kenya · 2011–2021</div>
+    <h1>Reading the<br><em>Mountain's Scars</em></h1>
+    <p class="sub">How Landsat, land surface temperature, and a Random Forest model traced the slow return of green to Africa's second-highest peak after its worst modern wildfires.</p>
+    <div class="byline">
+      <div><b>Author</b>Otieno Loventa Anyango</div>
+      <div><b>Supervisor</b>Dr. Harison Kipkulei, PhD</div>
+      <div><b>Department</b>Geomatic Engineering &amp; Geospatial Information Systems</div>
+      <div><b>Institution</b>JKUAT · 2025</div>
+    </div>
+  </div>
+  <div class="scrolldown"><span class="line"></span>Scroll</div>
+</header>
+
+<!-- ================= 01 THREAT ================= -->
+<section id="threat">
+  <div class="wrap fade">
+    <div class="chapter"><span class="num">01</span><span class="label">The Threat</span></div>
+    <h2 class="title">A water tower, increasingly on fire.</h2>
+    <div class="col2">
+      <div>
+        <p class="lede">Mount Kenya supplies roughly 40% of the country's water and around 60% of its hydropower, feeding the Tana and Ewaso Nyiro rivers. Its forests are also increasingly flammable.</p>
+        <p>Wildfires here are not new — charcoal evidence puts fire on the mountain for at least 26,000 years. What has changed is frequency and scale, driven by climate variability, illegal logging, and agricultural encroachment at the forest edge. The March 2012 fire — the focus of this study — burned for weeks through upper montane forest and bamboo. Less than a decade later, the February 2019 fire dwarfed it.</p>
+        <p>Existing recovery models lean almost entirely on vegetation indices like NDVI and NBR. This study asks what's missing: does <b style="color:var(--ink)">Land Surface Temperature</b> — a variable that governs evapotranspiration and soil moisture — help explain why some burned slopes green up again and others don't?</p>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="num">40<span style="font-size:20px;">%</span></div><div class="lbl">of Kenya's water supply originates on Mt. Kenya</div></div>
+        <div class="stat"><div class="num">8,000</div><div class="lbl">hectares burned in the March 2012 fire studied here</div></div>
+        <div class="stat"><div class="num green">80,000</div><div class="lbl">hectares affected by the February 2019 fire</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 02 STUDY AREA ================= -->
+<section id="area">
+  <div class="wrap fade">
+    <div class="chapter"><span class="num">02</span><span class="label">Study Area</span></div>
+    <h2 class="title">Five vegetation zones, one volcanic peak.</h2>
+    <div class="col2 rev">
+      <div>
+        <div class="mapbox" id="map-area"></div>
+        <div class="mapcaption">Map: Leaflet / CARTO dark basemap · rings approximate the elevation bands described in the study, centred on the summit (≈0.15°S, 37.31°E).</div>
+      </div>
+      <div>
+        <p class="lede">Rising to 5,199 m, Mount Kenya's vegetation is stratified by altitude — and each band burns and recovers differently.</p>
+        <ul class="legend-list">
+          <li><span class="swatch" style="background:#4C6E52;"></span><b style="color:var(--ink); font-weight:500;">Lower Montane Forest</b>&nbsp;— 1,200–2,500 m. Borders farmland; biodiverse but heavily logged.</li>
+          <li><span class="swatch" style="background:#5FA777;"></span><b style="color:var(--ink); font-weight:500;">Bamboo Zone</b>&nbsp;— 2,200–3,200 m. Dense <em style="color:var(--ink-dim);">Arundinaria alpina</em>; fire-sensitive.</li>
+          <li><span class="swatch" style="background:#3F7A5B;"></span><b style="color:var(--ink); font-weight:500;">Upper Montane Forest</b>&nbsp;— 2,500–3,500 m. Cedar-dominated; least fire-resilient.</li>
+          <li><span class="swatch" style="background:#C9A227;"></span><b style="color:var(--ink); font-weight:500;">Ericaceous Zone</b>&nbsp;— 3,500–4,000 m. Fire-adapted shrubs; slow to resprout.</li>
+          <li><span class="swatch" style="background:#7FA8C9;"></span><b style="color:var(--ink); font-weight:500;">Alpine / Nival</b>&nbsp;— above 4,000 m. Dwarf vegetation, rock, and glacier.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 03 FIRE HISTORY ================= -->
+<section id="history" class="tight">
+  <div class="wrap fade">
+    <div class="chapter"><span class="num">03</span><span class="label">Fire History</span></div>
+    <h2 class="title">The fires have been getting bigger.</h2>
+    <p class="lede">Documented burned area on Mount Kenya, reconstructed from KWS aerial surveys and satellite records. Dot size is scaled to hectares burned.</p>
+    <div class="timeline" id="timeline"></div>
+  </div>
+</section>
+
+<!-- ================= 04 METHOD ================= -->
+<section id="method">
+  <div class="wrap fade">
+    <div class="chapter"><span class="num">04</span><span class="label">Data &amp; Method</span></div>
+    <h2 class="title">Six datasets, one Random Forest.</h2>
+    <p class="lede">Ten years of Landsat 7/8 imagery (2011 pre-fire baseline through 2021) were combined with topography, climate, soil carbon, and MODIS burned-area data, then fed into a Random Forest regression trained to predict NBR — a proxy for vegetation recovery.</p>
+
+    <div class="flow">
+      <div class="flow-step"><b>Landsat 7 / 8</b>NBR · dNBR · LST retrieval</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><b>Burn Severity</b>7-class USGS classification</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><b>Zonal Statistics</b>climate · soil · topography</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><b>Random Forest</b>100 trees · 80/20 split</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><b>Validation</b>MCD64A1 · KFS field data</div>
+    </div>
+
+    <div class="col2" style="margin-top:56px;">
+      <div>
+        <table>
+          <thead><tr><th>Dataset</th><th>Source</th><th>Resolution</th></tr></thead>
+          <tbody>
+            <tr><td class="hi">Landsat 7/8</td><td>USGS</td><td>30 m</td></tr>
+            <tr><td class="hi">MCD64A1 burned area</td><td>NASA / MODIS</td><td>500 m</td></tr>
+            <tr><td class="hi">SRTM elevation</td><td>USGS</td><td>30 m</td></tr>
+            <tr><td class="hi">Climate (temp / precip)</td><td>WorldClim.org</td><td>~1 km</td></tr>
+            <tr><td class="hi">Soil organic carbon</td><td>AFSIS</td><td>250 m</td></tr>
+            <tr><td class="hi">Field validation</td><td>Kenya Forest Service</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <table>
+          <thead><tr><th>USGS Burn Class</th><th>dNBR range</th></tr></thead>
+          <tbody>
+            <tr><td>Unburned</td><td class="hi">&lt; -0.10</td></tr>
+            <tr><td>Low (regrowth)</td><td class="hi">-0.10 – 0.10</td></tr>
+            <tr><td>Low (burned)</td><td class="hi">0.10 – 0.27</td></tr>
+            <tr><td>Moderate</td><td class="hi">0.27 – 0.44</td></tr>
+            <tr><td>High</td><td class="hi">0.44 – 0.66</td></tr>
+            <tr><td>Very high</td><td class="hi">&gt; 0.66</td></tr>
+            <tr><td>Increased greenness</td><td class="hi">&lt; -0.10 (neg. dNBR)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 05 EXPLORER ================= -->
+<section id="explorer">
+  <div class="wrap fade">
+    <div class="chapter"><span class="num">05</span><span class="label">Burn Severity Explorer</span></div>
+    <h2 class="title">Watch the signal move, year by year.</h2>
+    <p class="lede">Drag the slider to move through 2011–2021. The circle's colour and size track the study's actual year-on-year average NBR change (Fig. 16) — red for continued loss, green for regrowth. This is a schematic reconstruction centred on the fire site, not a raw satellite classification.</p>
+
+    <div class="explorer">
+      <div class="explorer-grid">
+        <div>
+          <div class="mapbox" id="map-explorer" style="height:420px;"></div>
+        </div>
+        <div>
+          <div class="slider-row">
+            <input type="range" id="yearSlider" min="0" max="10" step="1" value="1">
+            <div class="year-ticks">
+              <span>2011</span><span>2013</span><span>2015</span><span>2017</span><span>2019</span><span>2021</span>
+            </div>
+          </div>
+          <div class="readout">
+            <div class="yr" id="roYear">2012</div>
+            <div class="val mono" id="roVal">Average NBR change: −0.148</div>
+            <span class="badge" id="roBadge">Sharp decline</span>
+            <div class="cap" id="roCap">The March 2012 fire scorches the mountain — NBR drops sharply, signalling catastrophic canopy loss.</div>
+          </div>
+          <ul class="legend-list" style="margin-top:20px;">
+            <li><span class="swatch" style="background:#E2602F;"></span>Loss / continued decline</li>
+            <li><span class="swatch" style="background:#C9A227;"></span>Near-stable, minimal change</li>
+            <li><span class="swatch" style="background:#5FA777;"></span>Positive recovery signal</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 06 MODEL ================= -->
+<section id="model">
+  <div class="wrap fade">
+    <div class="chapter"><span class="num">06</span><span class="label">What Drove Recovery</span></div>
+    <h2 class="title">Temperature and carbon rivalled fire severity itself.</h2>
+    <p class="lede">The Random Forest model explained <b style="color:var(--ink)">90.1%</b> of the variance in post-fire NBR on held-out test data — and stayed strong under 10-fold cross-validation.</p>
+
+    <div class="stats" style="grid-template-columns:repeat(4,1fr);">
+      <div class="stat"><div class="num">0.901</div><div class="lbl">R² — test set</div></div>
+      <div class="stat"><div class="num green">0.028</div><div class="lbl">RMSE — test set</div></div>
+      <div class="stat"><div class="num ice">0.875</div><div class="lbl">Mean R² — 10-fold CV</div></div>
+      <div class="stat"><div class="num">p&lt;.001</div><div class="lbl">ANOVA across burn-severity classes</div></div>
+    </div>
+
+    <div class="col2" style="margin-top:20px; align-items:stretch;">
+      <div class="chart-card">
+        <h4>Feature importance</h4>
+        <div class="note">Random Forest · relative contribution to predicting NBR</div>
+        <canvas id="chartImportance" height="290"></canvas>
+      </div>
+      <div class="chart-card">
+        <h4>What correlates with recovery</h4>
+        <div class="note">Pearson r against NBR change (Fig. 13, correlation matrix)</div>
+        <div class="corr-strip" id="corrStrip"></div>
+      </div>
+    </div>
+
+    <p style="margin-top:34px; max-width:70ch;">Burn severity (<span class="mono">dNBR</span>) and pre-fire NBR mattered most, as expected — but soil total organic carbon and temperature variables outweighed LST itself in raw importance. Correlation, though, told a more direct story: warmer mean and maximum temperatures tracked <em>positively</em> with recovery, while higher soil carbon and higher elevation tracked negatively — a reminder that colder, high-carbon upper-montane sites recovered more slowly than warmer lower slopes.</p>
+  </div>
+</section>
+
+<!-- ================= 07 LST PDP ================= -->
+<section id="lst" class="tight">
+  <div class="wrap fade">
+    <div class="chapter"><span class="num">07</span><span class="label">The Temperature Sweet Spot</span></div>
+    <h2 class="title">Recovery peaks in a narrow thermal band.</h2>
+    <div class="col2">
+      <div>
+        <p class="lede">The partial dependence plot for Land Surface Temperature reveals a sharp, non-linear relationship with recovery.</p>
+        <p>Below roughly 299 K, colder surfaces show a flat, negative effect on recovery — consistent with slower evapotranspiration and metabolic activity at higher, cooler elevations. Around 299–300 K, the effect spikes upward: a narrow thermal sweet spot where conditions favour regrowth. Push past ~301 K, and the effect turns volatile and declines again — a signal of heat and moisture stress working against recovery.</p>
+        <p>The practical implication: post-fire management that moderates surface temperature — mulching, shading, temperature-tolerant replanting — could nudge severely burned, exposed slopes back toward that recovery-favouring range.</p>
+      </div>
+      <div class="chart-card">
+        <h4>Partial dependence — LST</h4>
+        <div class="note">Reconstructed from Fig. 18 · Kelvin vs. partial dependence on NBR</div>
+        <canvas id="chartPDP" height="280"></canvas>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 08 RECOVERY ================= -->
+<section id="recovery">
+  <div class="wrap fade">
+    <div class="chapter"><span class="num">08</span><span class="label">Recovery Over Time</span></div>
+    <h2 class="title">A decade, not a season.</h2>
+    <p class="lede">Average NBR change across the study area, 2011–2021. The scar from 2012 is unmistakable — and the climb back out is slow, uneven, and still not perfectly linear.</p>
+    <div class="chart-card">
+      <canvas id="chartRecovery" height="260"></canvas>
+    </div>
+
+    <div class="col2" style="margin-top:56px;">
+      <div>
+        <h4 style="font-family:'Fraunces',serif; font-size:19px; margin-bottom:10px;">Cross-checking the 2012 burn scar</h4>
+        <p>Three independent sources were compared for the extent of the March 2012 fire — each measuring something slightly different.</p>
+        <table>
+          <thead><tr><th>Source</th><th>Burned area</th></tr></thead>
+          <tbody>
+            <tr><td class="hi">Landsat (this study)</td><td class="hi" style="color:var(--ember);">23,400 ha</td></tr>
+            <tr><td class="hi">MCD64A1 (MODIS)</td><td class="hi" style="color:var(--amber);">22,388 ha</td></tr>
+            <tr><td class="hi">KFS field survey</td><td class="hi" style="color:var(--green-bright);">9,878 ha</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top:14px; font-size:13.5px;">The 30 m Landsat estimate and the 500 m MODIS product agree closely. The KFS field figure is markedly lower — likely reflecting a narrower, ground-verified definition of "burned" versus the satellite-derived footprint.</p>
+      </div>
+      <div>
+        <h4 style="font-family:'Fraunces',serif; font-size:19px; margin-bottom:10px;">Reading the curve</h4>
+        <p><b style="color:var(--ink);">2012 —</b> catastrophic canopy loss registers immediately.</p>
+        <p><b style="color:var(--ink);">2013–2016 —</b> slow stabilization near the baseline; recovery is real but faint.</p>
+        <p><b style="color:var(--ink);">2017–2021 —</b> a more visible, if uneven, positive trend, peaking in 2020 — nine years after the fire that started it all.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 09 CONCLUSIONS ================= -->
+<section id="conclusions">
+  <div class="wrap fade">
+    <div class="chapter"><span class="num">09</span><span class="label">What This Means</span></div>
+    <h2 class="title">Recovery models need a temperature term.</h2>
+    <p class="lede">Three management implications follow directly from the model's findings.</p>
+
+    <div class="cards3">
+      <div class="card">
+        <div class="tag">Severity-specific response</div>
+        <h4>Triage by burn class</h4>
+        <p>Statistically distinct recovery trajectories across severity classes (Tukey HSD, p&lt;.001) mean high-severity patches need earlier, more intensive intervention than lightly burned ones.</p>
+      </div>
+      <div class="card">
+        <div class="tag">Thermal management</div>
+        <h4>Keep surfaces in range</h4>
+        <p>Since recovery is most favoured near 299–300 K, mulching, shading, and staged replanting on exposed slopes could shift local conditions back toward that band.</p>
+      </div>
+      <div class="card">
+        <div class="tag">Elevation-aware planning</div>
+        <h4>Don't treat the mountain as one unit</h4>
+        <p>Higher, cooler, higher-carbon sites recover on a different clock than lower montane forest — restoration budgets and timelines should reflect that gradient.</p>
+      </div>
+    </div>
+
+    <p style="margin-top:40px; max-width:70ch;">More broadly, the study argues that Land Surface Temperature — long underused next to vegetation indices in post-fire recovery science — deserves a permanent place in the predictor set, particularly for tropical montane ecosystems like Mount Kenya where elevation, temperature, and moisture are so tightly coupled. Future work should extend this to species-specific recovery dynamics and longer, higher-resolution time series as more Landsat and Sentinel data accumulate.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="fgrid">
+      <div class="fcol">
+        <b>Evaluating the Role of LST in Post-Fire Vegetation Recovery</b>
+        A case study of Mount Kenya. BSc project report, Department of Geomatic Engineering &amp; Geospatial Information Systems, JKUAT, 2025.
+      </div>
+      <div class="fcol mono">
+        Otieno Loventa Anyango · ENC221-0100/2019<br>
+        Supervised by Dr. Harison Kipkulei, PhD<br>
+        Built as an interactive companion to the written report.<br>
+        Map tiles © CARTO / OpenStreetMap contributors.
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script>
+/* ---------------- progress bar + scroll reveal ---------------- */
+const progress = document.getElementById('progress');
+window.addEventListener('scroll', () => {
+  const h = document.documentElement;
+  const pct = (h.scrollTop) / (h.scrollHeight - h.clientHeight) * 100;
+  progress.style.width = pct + '%';
+});
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+}, { threshold: 0.12 });
+document.querySelectorAll('.fade').forEach(el => io.observe(el));
+
+/* ---------------- ember particles ---------------- */
+const emberField = document.getElementById('emberField');
+for(let i=0;i<26;i++){
+  const s = document.createElement('span');
+  const size = 2 + Math.random()*4;
+  s.style.width = size+'px'; s.style.height = size+'px';
+  s.style.left = (Math.random()*100)+'%';
+  s.style.setProperty('--drift', (Math.random()*60-30)+'px');
+  s.style.animationDuration = (7 + Math.random()*10)+'s';
+  s.style.animationDelay = (Math.random()*10)+'s';
+  emberField.appendChild(s);
+}
+
+/* ---------------- fire history timeline ---------------- */
+const fires = [
+  {year:'2005', ha:3000, desc:'Moorland fire burns across the upper reaches of the mountain.'},
+  {year:'2009', ha:2500, desc:'A second moorland fire follows, four years later.'},
+  {year:'2011', ha:3600, desc:'Upper montane forest burns — a warning sign of what was coming.'},
+  {year:'2012', ha:8000, desc:'The fire this study is built around. Delayed rains fuel weeks of burning.'},
+  {year:'2019', ha:80000, desc:'By far the largest fire on record for the mountain — ten times the 2012 burn.'}
+];
+const maxHa = Math.max(...fires.map(f=>f.ha));
+const tl = document.getElementById('timeline');
+fires.forEach(f=>{
+  const dotSize = 8 + (Math.log(f.ha)/Math.log(maxHa))*22;
+  const row = document.createElement('div');
+  row.className = 'tl-item';
+  row.innerHTML = `
+    <div class="tl-year">${f.year}</div>
+    <div class="tl-dot-col"><div class="tl-dot" style="width:${dotSize}px;height:${dotSize}px;"></div></div>
+    <div class="tl-body"><b>${f.desc}</b><span class="tl-ha">${f.ha.toLocaleString()} hectares affected</span></div>`;
+  tl.appendChild(row);
+});
+
+/* ---------------- Study area map ---------------- */
+const center = [-0.1521, 37.3084];
+const mapArea = L.map('map-area', { zoomControl:true, scrollWheelZoom:false }).setView(center, 10);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 16
+}).addTo(mapArea);
+
+const zones = [
+  {r:26000, color:'#4C6E52', label:'Lower Montane 1200–2500m'},
+  {r:19000, color:'#5FA777', label:'Bamboo 2200–3200m'},
+  {r:13500, color:'#3F7A5B', label:'Upper Montane 2500–3500m'},
+  {r:8000,  color:'#C9A227', label:'Ericaceous 3500–4000m'},
+  {r:4000,  color:'#7FA8C9', label:'Alpine / Nival 4000m+'}
+];
+zones.forEach(z=>{
+  L.circle(center, { radius:z.r, color:z.color, weight:1, fillColor:z.color, fillOpacity:0.16 })
+    .addTo(mapArea).bindTooltip(z.label, {sticky:true});
+});
+L.marker(center, {icon: L.divIcon({className:'', html:'<div style="width:10px;height:10px;border-radius:50%;background:#E2602F;box-shadow:0 0 0 5px rgba(226,96,47,0.25);"></div>'})})
+  .addTo(mapArea).bindTooltip('Summit — 5,199 m');
+
+/* ---------------- Burn severity explorer ---------------- */
+const mapExplorer = L.map('map-explorer', { zoomControl:true, scrollWheelZoom:false }).setView(center, 10);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 16
+}).addTo(mapExplorer);
+
+// Real data: average NBR change per year (Figure 16)
+const recoveryData = [
+  {year:2011, val:0.000,  cap:'Pre-fire baseline used as the model\'s reference year.', badge:'Baseline'},
+  {year:2012, val:-0.148, cap:'The March 2012 fire scorches the mountain — NBR drops sharply, signalling catastrophic canopy loss.', badge:'Sharp decline'},
+  {year:2013, val:-0.010, cap:'Early stabilization. Recovery is just beginning to register in the signal.', badge:'Stabilizing'},
+  {year:2014, val:-0.008, cap:'Recovery remains slow and uneven across burn classes.', badge:'Slow, uneven'},
+  {year:2015, val:-0.011, cap:'Values hover near zero — the forest is holding, not yet rebounding.', badge:'Holding steady'},
+  {year:2016, val:0.008,  cap:'First clear signs of positive regrowth appear.', badge:'Turning positive'},
+  {year:2017, val:-0.001, cap:'A brief dip — recovery on Mt. Kenya is not linear.', badge:'Minor dip'},
+  {year:2018, val:0.040,  cap:'A strong rebound. Vegetation regrowth accelerates.', badge:'Strong rebound'},
+  {year:2019, val:-0.001, cap:'Growth momentarily plateaus.', badge:'Plateau'},
+  {year:2020, val:0.063,  cap:'The peak recovery signal of the decade.', badge:'Peak recovery'},
+  {year:2021, val:0.011,  cap:'Recovery levels off, settling into a modest, positive trend.', badge:'Levelling off'}
+];
+
+function valColor(v){
+  if(v <= -0.05) return '#E2602F';
+  if(v < 0.02) return '#C9A227';
+  return '#5FA777';
+}
+function valRadius(v){
+  return 6000 + Math.min(Math.abs(v), 0.15) * 90000;
+}
+
+let burnCircle = L.circle(center, {
+  radius: valRadius(recoveryData[1].val),
+  color: valColor(recoveryData[1].val),
+  weight: 1.5,
+  fillColor: valColor(recoveryData[1].val),
+  fillOpacity: 0.32
+}).addTo(mapExplorer);
+
+const slider = document.getElementById('yearSlider');
+const roYear = document.getElementById('roYear');
+const roVal = document.getElementById('roVal');
+const roCap = document.getElementById('roCap');
+const roBadge = document.getElementById('roBadge');
+
+function updateExplorer(idx){
+  const d = recoveryData[idx];
+  const c = valColor(d.val);
+  burnCircle.setStyle({ color:c, fillColor:c });
+  burnCircle.setRadius(valRadius(d.val));
+  roYear.textContent = d.year;
+  roYear.style.color = c;
+  roVal.textContent = 'Average NBR change: ' + (d.val>=0?'+':'') + d.val.toFixed(3);
+  roCap.textContent = d.cap;
+  roBadge.textContent = d.badge;
+  roBadge.style.background = c + '26';
+  roBadge.style.color = c;
+  roBadge.style.border = '1px solid ' + c + '55';
+}
+slider.addEventListener('input', (e)=> updateExplorer(parseInt(e.target.value)));
+updateExplorer(1);
+
+/* ---------------- Chart: Feature importance ---------------- */
+const impCtx = document.getElementById('chartImportance');
+new Chart(impCtx, {
+  type: 'bar',
+  data: {
+    labels: ['NBR (pre-fire)','Soil TOC','dNBR','Max Temp','Mean Temp','Elevation','LST','Min Temp','Aspect','Precip Sum','Year','Slope'],
+    datasets: [{
+      data: [0.350,0.215,0.205,0.065,0.050,0.045,0.040,0.025,0.012,0.010,0.008,0.002],
+      backgroundColor: (ctx)=> {
+        const idx = ctx.dataIndex;
+        return idx===6 ? '#E2602F' : 'rgba(127,168,201,0.55)';
+      },
+      borderRadius: 2,
+      barThickness: 14
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive:true,
+    plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:(c)=> 'importance: '+c.parsed.x.toFixed(3) } } },
+    scales:{
+      x:{ grid:{ color:'rgba(238,234,224,0.06)' }, ticks:{ color:'#9CA69B', font:{family:'IBM Plex Mono', size:10} } },
+      y:{ grid:{ display:false }, ticks:{ color:'#EEEAE0', font:{family:'Inter', size:11.5} } }
+    }
+  }
+});
+
+/* ---------------- Correlation strip ---------------- */
+const corr = [
+  {name:'max_temp', v:0.65}, {name:'mean_temp', v:0.62}, {name:'min_temp', v:0.57},
+  {name:'lst', v:0.39}, {name:'prec_sum', v:0.05}, {name:'aspect', v:-0.01},
+  {name:'slope', v:-0.45}, {name:'dnbr', v:-0.60}, {name:'elevation', v:-0.61}, {name:'totc', v:-0.68}
+];
+const corrEl = document.getElementById('corrStrip');
+corr.forEach(c=>{
+  const row = document.createElement('div');
+  row.className = 'corr-row';
+  const pct = Math.abs(c.v)*100;
+  const color = c.v >= 0 ? '#5FA777' : '#E2602F';
+  const side = c.v >= 0 ? `left:50%;` : `right:50%;`;
+  row.innerHTML = `
+    <div class="name">${c.name}</div>
+    <div class="corr-bar-bg"><div class="corr-bar" style="${side} width:${pct/2}%; background:${color};"></div>
+      <div style="position:absolute; left:50%; top:0; bottom:0; width:1px; background:rgba(238,234,224,0.25);"></div>
+    </div>
+    <div class="corr-val" style="color:${color};">${c.v>0?'+':''}${c.v.toFixed(2)}</div>`;
+  corrEl.appendChild(row);
+});
+
+/* ---------------- Chart: LST partial dependence ---------------- */
+const pdpX = [293,294,295,296,297,297.5,298,298.5,299,299.5,300,300.3,300.6,301,301.5,302,302.5,303,303.3,303.6,304,304.3];
+const pdpY = [-0.0142,-0.0131,-0.0131,-0.0133,-0.0134,-0.0137,-0.0157,-0.0155,-0.0065,-0.0063,-0.0068,-0.0060,-0.0125,-0.0123,-0.0124,-0.0125,-0.0114,-0.0113,-0.0113,-0.0114,-0.0142,-0.0150];
+new Chart(document.getElementById('chartPDP'), {
+  type:'line',
+  data:{
+    labels: pdpX,
+    datasets:[{
+      data: pdpY,
+      borderColor:'#84C79A',
+      backgroundColor:'rgba(132,199,154,0.08)',
+      borderWidth:2,
+      pointRadius:0,
+      tension:0.35,
+      fill:true
+    }]
+  },
+  options:{
+    responsive:true,
+    plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(c)=> 'PD: '+c.parsed.y.toFixed(4) } } },
+    scales:{
+      x:{ title:{display:true, text:'LST (K)', color:'#9CA69B', font:{family:'IBM Plex Mono', size:11}}, grid:{color:'rgba(238,234,224,0.06)'}, ticks:{ color:'#9CA69B', font:{family:'IBM Plex Mono', size:10}, maxTicksLimit:8 } },
+      y:{ grid:{color:'rgba(238,234,224,0.06)'}, ticks:{ color:'#9CA69B', font:{family:'IBM Plex Mono', size:10} } }
+    }
+  }
+});
+
+/* ---------------- Chart: Recovery over time ---------------- */
+new Chart(document.getElementById('chartRecovery'), {
+  type:'line',
+  data:{
+    labels: recoveryData.map(d=>d.year),
+    datasets:[{
+      data: recoveryData.map(d=>d.val),
+      borderColor:'#E2602F',
+      backgroundColor:'rgba(226,96,47,0.06)',
+      segment:{
+        borderColor: ctx => ctx.p1.parsed.y >= 0 ? '#5FA777' : '#E2602F'
+      },
+      pointBackgroundColor: recoveryData.map(d=>valColor(d.val)),
+      pointRadius:5,
+      pointHoverRadius:7,
+      borderWidth:2.5,
+      tension:0.25,
+      fill:true
+    }]
+  },
+  options:{
+    responsive:true,
+    plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(c)=> 'NBR change: '+(c.parsed.y>=0?'+':'')+c.parsed.y.toFixed(3) } } },
+    scales:{
+      x:{ grid:{display:false}, ticks:{ color:'#9CA69B', font:{family:'IBM Plex Mono', size:11} } },
+      y:{ grid:{color:'rgba(238,234,224,0.06)'}, ticks:{ color:'#9CA69B', font:{family:'IBM Plex Mono', size:10} } }
+    }
+  }
+});
+</script>
+</body>
+</html>
