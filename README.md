@@ -86,7 +86,7 @@ The Earth Engine scripts in `gee/` are written for the [GEE Code Editor](https:/
 
 ## Interactive Story Map
 
-The `docs/` folder contains a standalone HTML story map summarizing the study's methodology and findings with interactive charts and maps, built with Leaflet and Chart.js. To publish it as a live site: **Settings → Pages → source: `main` branch, folder: `/docs`.**
+The `docs/` folder contains a standalone HTML story map summarizing the study's methodology and findings with interactive charts and maps, built with Leaflet and Chart.js.
 
 ## Citation
 
